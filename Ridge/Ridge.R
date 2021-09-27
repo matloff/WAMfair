@@ -99,7 +99,7 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    names(d) <- colnames(x)
    d[lambdaVars] <- unlist(lambdas)
 
-   # solve for beta-hate
+   # solve for beta-hats
    bhat <- solve(xpx + diag(d)) %*% xpy
    bhat <- as.vector(bhat)
 
@@ -137,3 +137,48 @@ predict.qeSemiRidgeLin <- function(object,newx)
    collectForReturn(object,preds)
 }
 
+# call to glm.fit() with lambdas
+
+# arguments:
+
+#    x,y,start,family: as in glm.fit()
+#    lambdas: as in qeSemiRidgeLin() above
+#    nIters: number of iterations
+
+#    glm.fit() being fit first, without lambdas, with the resulting
+#    beta-hats then being used for initial values for our algorithm here
+
+glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters) 
+{
+   xm <- scale(x)
+   xm <- cbind(1,xm)
+   xm <- as.matrix(xm)
+
+   z <- glm.fit(x=xm,y=y,family=family)  
+   preds <- xm %*% coef(z)
+   preds <- as.vector(1 / (1 + exp(-preds)))
+   wts <- 1 / (preds * (1-preds))
+
+   lambdaVars <- names(lambdas)
+   d <- rep(0,ncol(xm))
+   names(d) <- c('const',colnames(x))
+   d[lambdaVars] <- unlist(lambdas)
+   for (i in 1:nIters) {
+   # browser()
+      xw <- sqrt(wts) * xm
+      xpx <- t(xw) %*% xw
+      xpy <- t(xm) %*% (wts * y)
+      scaleToMax1 <- max(diag(xpx))
+      xpx <- xpx / scaleToMax1
+      xpy <- xpy / scaleToMax1
+      bhat <- solve(xpx + diag(d)) %*% xpy
+      bhat <- as.vector(bhat)
+      preds <- as.vector(xm %*% bhat)
+      preds <- 1 / (1 + exp(-preds))
+      wts <- 1 / (preds * (1-preds))
+
+   }
+
+   coef(z)
+
+}
