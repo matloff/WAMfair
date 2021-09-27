@@ -38,20 +38,17 @@
 # arguments:  see above, plus
 
 #     k: number of nearest neighbors
-#     scaleX:  TRUE, features will be centered and scaled; note that
+#     scaleX: if TRUE, features will be centered and scaled; note that
 #        this means the features must be numeric
 #     smoothingFtn: as in kNN(); 'mean' or 'loclin'
 
 # value:  see above
+
+require(qeML)
  
-qeSemiRidgeLin <- function(data,yName,lambdas,
+qeSemiRidge <- function(data,yName,lambdas,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
-   require(qeML)
-
-   if (length(setdiff(names(lambdas),names(data))) > 0)
-      stop('invalid feature name')
-
    trainRow1 <- getRow1(data,yName)
    classif <- is.factor(data[[yName]])
    if (!is.null(holdout)) splitData(holdout,data)
@@ -60,48 +57,27 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    x <- xyc$x
    colnamesX <- colnames(x)
    xm <- as.matrix(x)
-
-   # need to update lambdas re X dummies
-   isf <- colnamesX[is.factor(colnamesX)]
-   cn9 <- substr(colnamesX,9)
-   for (f in isf) {
-      namesf <- which(f == cn9)
-   }
-
-   # scale X data
-   xm <- scale(xm)
+   xm <- cbind(1,xm)
 
    factorsInfo <- xyc$factorsInfo
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
    y <- xyc$y
+
    if (!is.numeric(y)) stop('Y must be numeric')
-
-   # center Y
-   ybar <- mean(y)
-   y <- y - ybar
-
-   xpx <- t(xm) %*% xm
-   xpx <- xpx / nrow(xm)  # now all diags are 1.0
-   xpy <- t(xm) %*% y  
-   xpy <- xpy / nrow(xm)  # retain scale
-
-   # compute diag perturbation
    lambdaVars <- names(lambdas)
    d <- rep(0,ncol(xm))
-   names(d) <- colnames(x)
+   names(d) <- c('const',colnames(x))
    d[lambdaVars] <- unlist(lambdas)
-
-   # solve for beta-hate
+   xpx <- t(xm) %*% xm
+   xpy <- t(xm) %*% y
    bhat <- solve(xpx + diag(d)) %*% xpy
    bhat <- as.vector(bhat)
 
-   srout <- list(bhat=bhat,
-      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),
-      ybar=ybar)
+   srout <- list(bhat=bhat)
    srout$classif <- classif
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
-   class(srout) <- c('qeSemiRidgeLin')
+   class(srout) <- c('qeSemiRidge')
    if (!is.null(holdout)) {
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
@@ -109,7 +85,7 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    srout
 }
 
-predict.qeSemiRidgeLin <- function(object,newx)
+predict.qeSemiRidge <- function(object,newx)
 {
    if (!regtools::allNumeric(newx)) 
       newx <- qeML:::setTrainFactors(object,newx)
@@ -121,9 +97,9 @@ predict.qeSemiRidgeLin <- function(object,newx)
       nr <- nrow(newx)
    } 
    newx <- matrix(xyc$x,nrow=nr)
-   newx <- scale(newx,center=object$ctr,scale=object$scl)
+   newx <- cbind(1,newx)
 
-   preds <- newx %*% object$bhat + object$ybar
+   preds <- newx %*% object$bhat
    if (!object$classif) return(preds)
    if (is.vector(preds)) preds <- matrix(preds,nrow=1)
    collectForReturn(object,preds)
