@@ -163,22 +163,25 @@ glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters)
    d <- rep(0,ncol(xm))
    names(d) <- c('const',colnames(x))
    d[lambdaVars] <- unlist(lambdas)
+   browser()
    for (i in 1:nIters) {
-   # browser()
       xw <- sqrt(wts) * xm
       xpx <- t(xw) %*% xw
+      # xpx <- t(xm) %*% diag(wts) %*% xm
       xpy <- t(xm) %*% (wts * y)
       scaleToMax1 <- max(diag(xpx))
       xpx <- xpx / scaleToMax1
       xpy <- xpy / scaleToMax1
       bhat <- solve(xpx + diag(d)) %*% xpy
       bhat <- as.vector(bhat)
-      preds <- as.vector(xm %*% bhat)
-      preds <- 1 / (1 + exp(-preds))
-      wts <- 1 / (preds * (1-preds))
+      if (i < nIters) {
+         preds <- as.vector(xm %*% bhat)
+         preds <- 1 / (1 + exp(-preds))
+         wts <- 1 / (preds * (1-preds))
+      }
 
    }
 
-   coef(z)
+   bhat
 
 }
