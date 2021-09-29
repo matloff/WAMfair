@@ -45,9 +45,8 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
 
    # standard qe*-series code for ML methods needing numeric X
    trainRow1 <- getRow1(data,yName)
-   classif <- is.factor(data[[yName]])
    if (!is.null(holdout)) splitData(holdout,data)
-   xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=classif,
+   xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=FALSE,
       makeYdumms=TRUE)
    x <- xyc$x
    colnamesX <- colnames(x)
@@ -95,9 +94,8 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    bhat <- as.vector(bhat)
 
    srout <- list(bhat=bhat,
-      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),
-      ybar=ybar)
-   srout$classif <- classif
+      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),ybar=ybar)
+   srout$classif <- FALSE
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeSemiRidgeLin')
@@ -149,28 +147,30 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
 
    # need to update lambdas re X dummies
    yCol <- which(names(data) == yName)
-   isf <- sapply(1:length(names(data[,-yCol])),
-      function(col) is.factor(data[[col]]))
+   dataX <- data[,-yCol]
+   isf <- sapply(1:length(names(dataX)),
+      function(col) is.factor(dataX[[col]]))
    isf <- which(isf)
-   newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
-   # now for the factor sensitive variables
-   for (i in isf) {
-      lvls <- levels(data[,i])
-      lvls <- lvls[-length(lvls)]
-      newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+   if (length(isf) > 0) {
+      newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
+      # now for the factor sensitive variables
+      for (i in isf) {
+         lvls <- levels(data[,i])
+         lvls <- lvls[-length(lvls)]
+         newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+      }
+      lambdas <- newLambdas
    }
-   lambdas <- newLambdas
 
    factorsInfo <- xyc$factorsInfo
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
    y <- xyc$y
-   if (!is.factor(y)) stop('Y must be a factor')
 
-   bhat <- glmFitLambda(xm,y,start=start,family=binomial(),lambdas,nIters) 
+   yNum <- as.numeric(y) - 1
+   bhat <- glmFitLambda(xm,yNum,start=start,family=binomial(),lambdas,nIters) 
 
    srout <- list(bhat=bhat,
-      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),
-      ybar=ybar)
+      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
@@ -219,7 +219,9 @@ glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters)
    if (is.null(attr(x,'scaled:center')))
       stop('x must already be scaled')
    xm <- cbind(1,x)
+   colnames(xm)[1] <- 'const'
    xm <- as.matrix(xm)
+
 
    z <- glm.fit(x=xm,y=y,family=family)  
    preds <- xm %*% coef(z)
@@ -228,7 +230,7 @@ glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters)
 
    lambdaVars <- names(lambdas)
    d <- rep(0,ncol(xm))
-   names(d) <- c('const',colnames(x))
+   names(d) <- colnames(xm)
    d[lambdaVars] <- unlist(lambdas)
    for (i in 1:nIters) {
       xw <- sqrt(wts) * xm
