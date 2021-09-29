@@ -110,7 +110,6 @@ predict.qeSemiRidgeLin <- function(object,newx)
 {
    if (!regtools::allNumeric(newx)) 
       newx <- qeML:::setTrainFactors(object,newx)
-   classif <- object$classif
    xyc <- getXY(newx,NULL,TRUE,FALSE,object$factorsInfo,makeYdumms=TRUE)
    if (is.vector(newx)) {
       nr <- 1
@@ -121,9 +120,7 @@ predict.qeSemiRidgeLin <- function(object,newx)
    newx <- scale(newx,center=object$ctr,scale=object$scl)
 
    preds <- newx %*% object$bhat + object$ybar
-   if (!object$classif) return(preds)
-   if (is.vector(preds)) preds <- matrix(preds,nrow=1)
-   collectForReturn(object,preds)
+   preds
 }
  
 qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
@@ -169,12 +166,12 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    yNum <- as.numeric(y) - 1
    bhat <- glmFitLambda(xm,yNum,start=start,family=binomial(),lambdas,nIters) 
 
-   srout <- list(bhat=bhat,
+   srout <- list(bhat=bhat,classNames=levels(y),
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
-   class(srout) <- c('qeSemiRidgeLin')
+   class(srout) <- c('qeSemiRidgeLog')
    if (!is.null(holdout)) { 
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
@@ -195,11 +192,12 @@ predict.qeSemiRidgeLog <- function(object,newx)
    } 
    newx <- matrix(xyc$x,nrow=nr)
    newx <- scale(newx,center=object$ctr,scale=object$scl)
+   newx <- cbind(1,newx)
 
-   preds <- newx %*% object$bhat + object$ybar
-   if (!object$classif) return(preds)
+   preds <- newx %*% object$bhat 
+   preds <- 1 / (1 + exp(-preds))
    if (is.vector(preds)) preds <- matrix(preds,nrow=1)
-   collectForReturn(object,preds)
+   qeML:::collectForReturn(object,preds)
 }
 
 # call to glm.fit() with lambdas
