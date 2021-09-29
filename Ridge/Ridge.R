@@ -34,15 +34,6 @@
 #       vector of predicted values
 
 #########################  qeSemiRidge()  #################################
-
-# arguments:  see above, plus
-
-#     k: number of nearest neighbors
-#     scaleX:  TRUE, features will be centered and scaled; note that
-#        this means the features must be numeric
-#     smoothingFtn: as in kNN(); 'mean' or 'loclin'
-
-# value:  see above
  
 qeSemiRidgeLin <- function(data,yName,lambdas,
    holdout=floor(min(1000,0.1*nrow(data))))
@@ -136,6 +127,80 @@ predict.qeSemiRidgeLin <- function(object,newx)
    if (is.vector(preds)) preds <- matrix(preds,nrow=1)
    collectForReturn(object,preds)
 }
+ 
+qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
+   holdout=floor(min(1000,0.1*nrow(data))))
+{
+   require(qeML)
+
+   if (length(setdiff(names(lambdas),names(data))) > 0)
+      stop('invalid feature name')
+
+   # standard qe*-series code for ML methods needing numeric X
+   trainRow1 <- getRow1(data,yName)
+   classif <- is.factor(data[[yName]])
+   if (!is.null(holdout)) splitData(holdout,data)
+   xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=classif,
+      makeYdumms=TRUE)
+   x <- xyc$x
+   colnamesX <- colnames(x)
+   xm <- as.matrix(x)
+   xm <- scale(xm)
+
+   # need to update lambdas re X dummies
+   yCol <- which(names(data) == yName)
+   isf <- sapply(1:length(names(data[,-yCol])),
+      function(col) is.factor(data[[col]]))
+   isf <- which(isf)
+   newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
+   # now for the factor sensitive variables
+   for (i in isf) {
+      lvls <- levels(data[,i])
+      lvls <- lvls[-length(lvls)]
+      newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+   }
+   lambdas <- newLambdas
+
+   factorsInfo <- xyc$factorsInfo
+   if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
+   y <- xyc$y
+   if (!is.factor(y)) stop('Y must be a factor')
+
+   bhat <- glmFitLambda(xm,y,start=start,family=binomial(),lambdas,nIters) 
+
+   srout <- list(bhat=bhat,
+      ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),
+      ybar=ybar)
+   srout$classif <- classif
+   srout$factorsInfo <- factorsInfo
+   srout$trainRow1 <- trainRow1
+   class(srout) <- c('qeSemiRidgeLin')
+   if (!is.null(holdout)) { 
+      predictHoldout(srout)
+      srout$holdIdxs <- holdIdxs
+   } else srout$holdIdxs <- NULL
+   srout
+}
+
+predict.qeSemiRidgeLog <- function(object,newx)
+{
+   if (!regtools::allNumeric(newx)) 
+      newx <- qeML:::setTrainFactors(object,newx)
+   classif <- object$classif
+   xyc <- getXY(newx,NULL,TRUE,FALSE,object$factorsInfo,makeYdumms=TRUE)
+   if (is.vector(newx)) {
+      nr <- 1
+   } else{
+      nr <- nrow(newx)
+   } 
+   newx <- matrix(xyc$x,nrow=nr)
+   newx <- scale(newx,center=object$ctr,scale=object$scl)
+
+   preds <- newx %*% object$bhat + object$ybar
+   if (!object$classif) return(preds)
+   if (is.vector(preds)) preds <- matrix(preds,nrow=1)
+   collectForReturn(object,preds)
+}
 
 # call to glm.fit() with lambdas
 
@@ -150,8 +215,10 @@ predict.qeSemiRidgeLin <- function(object,newx)
 
 glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters) 
 {
-   xm <- scale(x)
-   xm <- cbind(1,xm)
+   # x should already be scaled
+   if (is.null(attr(x,'scaled:center')))
+      stop('x must already be scaled')
+   xm <- cbind(1,x)
    xm <- as.matrix(xm)
 
    z <- glm.fit(x=xm,y=y,family=family)  
@@ -163,7 +230,6 @@ glmFitLambda <- function(x,y,start=NULL,family=binomial(),lambdas,nIters)
    d <- rep(0,ncol(xm))
    names(d) <- c('const',colnames(x))
    d[lambdaVars] <- unlist(lambdas)
-   browser()
    for (i in 1:nIters) {
       xw <- sqrt(wts) * xm
       xpx <- t(xw) %*% xw
