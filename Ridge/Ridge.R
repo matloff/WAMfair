@@ -131,16 +131,28 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    if (length(setdiff(names(lambdas),names(data))) > 0)
       stop('invalid feature name')
 
-   # standard qe*-series code for ML methods needing numeric X
+   # standard qe*-series code for ML methods needing numeric X; here we
+   # have a classification problem, so getXY() will also create a dummy
+   # for each level of the factor Y
    trainRow1 <- getRow1(data,yName)
    classif <- is.factor(data[[yName]])
    if (!is.null(holdout)) splitData(holdout,data)
    xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=classif,
       makeYdumms=TRUE)
+   xy <- xyc$xy
    x <- xyc$x
    colnamesX <- colnames(x)
    xm <- as.matrix(x)
    xm <- scale(xm)
+
+   yDumms <- xyc$yDumms  # dummies version of Y; xy is X+this
+   y <- xyc$y  # original R factor version of Y
+   classNames <- xyc$classNames
+   nClass <- length(classNames)
+   ncxy <- ncol(xy)
+   nx <- ncol(x)
+   nydumms <- ncxy - nx  # redundant, same as nClass
+   empirClassProbs <- colMeans(yDumms)
 
    # need to update lambdas re X dummies
    yCol <- which(names(data) == yName)
@@ -163,10 +175,17 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
    y <- xyc$y
 
-   yNum <- as.numeric(y) - 1
-   bhat <- glmFitLambda(xm,yNum,start=start,family=binomial(),lambdas,nIters) 
+   doGlmSemiRidge <- function(colI) {
+      tmpDF <- cbind(x, yDumms[, colI])
+      names(tmpDF)[nx + 1] <- "yDumm"
+      bhat <- glmFitLambda(xm,yDumms[,colI],start=start,family=binomial(),
+         lambdas,nIters) 
+      bhat     
+   }
 
-   srout <- list(bhat=bhat,classNames=levels(y),
+   bhats <- t(sapply(1:nydumms, doGlmSemiRidge))
+
+   srout <- list(bhats=bhats,classNames=levels(y),
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
    srout$factorsInfo <- factorsInfo
