@@ -183,7 +183,7 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
       bhat     
    }
 
-   bhats <- t(sapply(1:nydumms, doGlmSemiRidge))
+   bhats <- sapply(1:nydumms, doGlmSemiRidge)
 
    srout <- list(bhats=bhats,classNames=levels(y),
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
@@ -202,7 +202,7 @@ predict.qeSemiRidgeLog <- function(object,newx)
 {
    if (!regtools::allNumeric(newx)) 
       newx <- qeML:::setTrainFactors(object,newx)
-   classif <- object$classif
+   classif <- TRUE
    xyc <- getXY(newx,NULL,TRUE,FALSE,object$factorsInfo,makeYdumms=TRUE)
    if (is.vector(newx)) {
       nr <- 1
@@ -213,9 +213,8 @@ predict.qeSemiRidgeLog <- function(object,newx)
    newx <- scale(newx,center=object$ctr,scale=object$scl)
    newx <- cbind(1,newx)
 
-   preds <- newx %*% object$bhat 
+   preds <- newx %*% object$bhats 
    preds <- 1 / (1 + exp(-preds))
-   if (is.vector(preds)) preds <- matrix(preds,nrow=1)
    qeML:::collectForReturn(object,preds)
 }
 
