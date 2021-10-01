@@ -33,9 +33,9 @@
 
 #       vector of predicted values
 
-#########################  qeSemiRidge()  #################################
+#########################  qeFairRidge()  #################################
  
-qeSemiRidgeLin <- function(data,yName,lambdas,
+qeFairRidgeLin <- function(data,yName,lambdas,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
    require(qeML)
@@ -98,7 +98,7 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    srout$classif <- FALSE
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
-   class(srout) <- c('qeSemiRidgeLin')
+   class(srout) <- c('qeFairRidgeLin')
    if (!is.null(holdout)) {
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
@@ -106,7 +106,7 @@ qeSemiRidgeLin <- function(data,yName,lambdas,
    srout
 }
 
-predict.qeSemiRidgeLin <- function(object,newx)
+predict.qeFairRidgeLin <- function(object,newx)
 {
    if (!regtools::allNumeric(newx)) 
       newx <- qeML:::setTrainFactors(object,newx)
@@ -123,7 +123,7 @@ predict.qeSemiRidgeLin <- function(object,newx)
    preds
 }
  
-qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
+qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
    require(qeML)
@@ -175,7 +175,7 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
    y <- xyc$y
 
-   doGlmSemiRidge <- function(colI) {
+   doGlmFairRidge <- function(colI) {
       tmpDF <- cbind(x, yDumms[, colI])
       names(tmpDF)[nx + 1] <- "yDumm"
       bhat <- glmFitLambda(xm,yDumms[,colI],start=start,family=binomial(),
@@ -183,14 +183,14 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
       bhat     
    }
 
-   bhats <- sapply(1:nydumms, doGlmSemiRidge)
+   bhats <- sapply(1:nydumms, doGlmFairRidge)
 
    srout <- list(bhats=bhats,classNames=levels(y),
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
-   class(srout) <- c('qeSemiRidgeLog')
+   class(srout) <- c('qeFairRidgeLog')
    if (!is.null(holdout)) { 
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
@@ -198,7 +198,7 @@ qeSemiRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    srout
 }
 
-predict.qeSemiRidgeLog <- function(object,newx)
+predict.qeFairRidgeLog <- function(object,newx)
 {
    if (!regtools::allNumeric(newx)) 
       newx <- qeML:::setTrainFactors(object,newx)
@@ -223,7 +223,7 @@ predict.qeSemiRidgeLog <- function(object,newx)
 # arguments:
 
 #    x,y,start,family: as in glm.fit()
-#    lambdas: as in qeSemiRidgeLin() above
+#    lambdas: as in qeFairRidgeLin() above
 #    nIters: number of iterations
 
 #    glm.fit() being fit first, without lambdas, with the resulting
