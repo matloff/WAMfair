@@ -1,13 +1,11 @@
 
-# qe*() arguments:
+# qeFair*() arguments:
 
 #    data:  dataframe, training set; class labels col is a factor; other
 #       columns may be factors
 #    yName:  column name for outcome variable; vector indicates
 #       regression, factor classification 
 #    possible algorithm-specific options
-#    allDefaults:  if TRUE, take all the defaults of the wrapped
-#       function, e.g. e1071::svm()
 #    holdout:  size of holdout set, if any
 
 # value:
@@ -164,9 +162,11 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
       newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
       # now for the factor sensitive variables
       for (i in isf) {
-         lvls <- levels(data[,i])
-         lvls <- lvls[-length(lvls)]
-         newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+         if (names(dataX)[i] %in% names(lambdas)) {
+            lvls <- levels(data[,i])
+            lvls <- lvls[-length(lvls)]
+            newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+         }
       }
       lambdas <- newLambdas
    }
@@ -188,6 +188,7 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    srout <- list(bhats=bhats,classNames=levels(y),
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
+   srout$yName <- yName
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRidgeLog')
@@ -215,6 +216,8 @@ predict.qeFairRidgeLog <- function(object,newx)
 
    preds <- newx %*% object$bhats 
    preds <- 1 / (1 + exp(-preds))
+   rs <- rowSums(preds)
+   preds <- (1/rs) * preds
    qeML:::collectForReturn(object,preds)
 }
 
