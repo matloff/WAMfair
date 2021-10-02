@@ -152,27 +152,6 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    nydumms <- ncxy - nx  # redundant, same as nClass
    empirClassProbs <- colMeans(yDumms)
 
-###    yCol <- which(names(data) == yName)
-###    dataX <- data[,-yCol]
-###    colnamesX <- colnames(dataX)
-###    newLambdas <- list()
-###    lambdaNames <- names(lambdas)
-###    # for each factor in dataX, is it in lambdas?; if so, expand lambdas
-###    for (i in 1:ncol(dataX)) {
-###       xName <- names(dataX)[i]
-###       if (xName %in% lambdaNames) {
-###          if (is.numeric(dataX[,i])) {
-###             newLambdas[xName] <- lambdas[xName]
-###          } else {
-###             lvls <- levels(dataX[,i])
-###             lvls <- lvls[-length(lvls)]  # omit redundant dummy
-###             expandedNames <- paste0(xName,'.',lvls)
-###             newLambdas[expandedNames] <- lambdas[[colnamesX[i]]]
-###          }
-###       }
-###    }
-###    lambdas <- newLambdas
-
    # need to update lambdas re X dummies
    lambdas <- expandLambdas(data,yName,lambdas)
 
@@ -225,6 +204,90 @@ predict.qeFairRidgeLog <- function(object,newx)
    preds <- (1/rs) * preds
    qeML:::collectForReturn(object,preds)
 }
+ 
+## qeFairRidgeScutari <- function(data,yName,lambda,
+##    holdout=floor(min(1000,0.1*nrow(data))))
+## {
+##    require(qeML)
+## 
+##    if (length(setdiff(names(lambdas),names(data))) > 0)
+##       stop('invalid feature name')
+## 
+##    # standard qe*-series code for ML methods needing numeric X; here we
+##    # have a classification problem, so getXY() will also create a dummy
+##    # for each level of the factor Y
+##    trainRow1 <- getRow1(data,yName)
+##    classif <- is.factor(data[[yName]])
+##    if (!is.null(holdout)) splitData(holdout,data)
+##    xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=classif,
+##       makeYdumms=TRUE)
+##    xy <- xyc$xy
+##    x <- xyc$x
+##    colnamesX <- colnames(x)
+##    xm <- as.matrix(x)
+##    xm <- scale(xm)
+## 
+##    yDumms <- xyc$yDumms  # dummies version of Y; xy is X+this
+##    y <- xyc$y  # original R factor version of Y
+##    classNames <- xyc$classNames
+##    nClass <- length(classNames)
+##    ncxy <- ncol(xy)
+##    nx <- ncol(x)
+##    nydumms <- ncxy - nx  # redundant, same as nClass
+##    empirClassProbs <- colMeans(yDumms)
+## 
+##    # need to update lambdas re X dummies
+##    lambdas <- expandLambdas(data,yName,lambdas)
+## 
+##    factorsInfo <- xyc$factorsInfo
+##    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
+##    y <- xyc$y
+## 
+##    doGlmFairRidge <- function(colI) {
+##       tmpDF <- cbind(x, yDumms[, colI])
+##       names(tmpDF)[nx + 1] <- "yDumm"
+##       bhat <- glmFitLambda(xm,yDumms[,colI],start=start,family=binomial(),
+##          lambdas,nIters) 
+##       bhat     
+##    }
+## 
+##    bhats <- sapply(1:nydumms, doGlmFairRidge)
+## 
+##    srout <- list(bhats=bhats,classNames=levels(y),
+##       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
+##    srout$classif <- classif
+##    srout$yName <- yName
+##    srout$factorsInfo <- factorsInfo
+##    srout$trainRow1 <- trainRow1
+##    class(srout) <- c('qeFairRidgeScutari')
+##    if (!is.null(holdout)) { 
+##       predictHoldout(srout)
+##       srout$holdIdxs <- holdIdxs
+##    } else srout$holdIdxs <- NULL
+##    srout
+## }
+## 
+## predict.qeFairRidgeScutari <- function(object,newx)
+## {
+##    if (!regtools::allNumeric(newx)) 
+##       newx <- qeML:::setTrainFactors(object,newx)
+##    classif <- TRUE
+##    xyc <- getXY(newx,NULL,TRUE,FALSE,object$factorsInfo,makeYdumms=TRUE)
+##    if (is.vector(newx)) {
+##       nr <- 1
+##    } else{
+##       nr <- nrow(newx)
+##    } 
+##    newx <- matrix(xyc$x,nrow=nr)
+##    newx <- scale(newx,center=object$ctr,scale=object$scl)
+##    newx <- cbind(1,newx)
+## 
+##    preds <- newx %*% object$bhats 
+##    preds <- 1 / (1 + exp(-preds))
+##    rs <- rowSums(preds)
+##    preds <- (1/rs) * preds
+##    qeML:::collectForReturn(object,preds)
+## }
 
 expandLambdas <- function(data,yName,lambdas) 
 {
