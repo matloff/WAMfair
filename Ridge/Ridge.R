@@ -152,24 +152,29 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    nydumms <- ncxy - nx  # redundant, same as nClass
    empirClassProbs <- colMeans(yDumms)
 
+###    yCol <- which(names(data) == yName)
+###    dataX <- data[,-yCol]
+###    colnamesX <- colnames(dataX)
+###    newLambdas <- list()
+###    lambdaNames <- names(lambdas)
+###    # for each factor in dataX, is it in lambdas?; if so, expand lambdas
+###    for (i in 1:ncol(dataX)) {
+###       xName <- names(dataX)[i]
+###       if (xName %in% lambdaNames) {
+###          if (is.numeric(dataX[,i])) {
+###             newLambdas[xName] <- lambdas[xName]
+###          } else {
+###             lvls <- levels(dataX[,i])
+###             lvls <- lvls[-length(lvls)]  # omit redundant dummy
+###             expandedNames <- paste0(xName,'.',lvls)
+###             newLambdas[expandedNames] <- lambdas[[colnamesX[i]]]
+###          }
+###       }
+###    }
+###    lambdas <- newLambdas
+
    # need to update lambdas re X dummies
-   yCol <- which(names(data) == yName)
-   dataX <- data[,-yCol]
-   isf <- sapply(1:length(names(dataX)),
-      function(col) is.factor(dataX[[col]]))
-   isf <- which(isf)
-   if (length(isf) > 0) {
-      newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
-      # now for the factor sensitive variables
-      for (i in isf) {
-         if (names(dataX)[i] %in% names(lambdas)) {
-            lvls <- levels(data[,i])
-            lvls <- lvls[-length(lvls)]
-            newLambdas[lvls] <- lambdas[[colnamesX[i]]]
-         }
-      }
-      lambdas <- newLambdas
-   }
+   lambdas <- expandLambdas(data,yName,lambdas)
 
    factorsInfo <- xyc$factorsInfo
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
@@ -219,6 +224,31 @@ predict.qeFairRidgeLog <- function(object,newx)
    rs <- rowSums(preds)
    preds <- (1/rs) * preds
    qeML:::collectForReturn(object,preds)
+}
+
+expandLambdas <- function(data,yName,lambdas) 
+{
+   yCol <- which(names(data) == yName)
+   dataX <- data[,-yCol]
+   colnamesX <- colnames(dataX)
+   newLambdas <- list()
+   lambdaNames <- names(lambdas)
+   # for each factor in dataX, is it in lambdas?; if so, expand lambdas
+   for (i in 1:ncol(dataX)) {
+      xName <- names(dataX)[i]
+      if (xName %in% lambdaNames) {
+         if (is.numeric(dataX[,i])) {
+            newLambdas[xName] <- lambdas[xName]
+         } else {
+            lvls <- levels(dataX[,i])
+            lvls <- lvls[-length(lvls)]  # omit redundant dummy
+            expandedNames <- paste0(xName,'.',lvls)
+            newLambdas[expandedNames] <- lambdas[[colnamesX[i]]]
+         }
+      }
+   }
+   lambdas <- newLambdas
+   lambdas
 }
 
 # call to glm.fit() with lambdas
