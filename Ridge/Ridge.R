@@ -5,6 +5,7 @@
 #       columns may be factors
 #    yName:  column name for outcome variable; vector indicates
 #       regression, factor classification 
+#    sensNames:  sensitive variables to be excluded from the ML analysis
 #    possible algorithm-specific options
 #    holdout:  size of holdout set, if any
 
@@ -32,8 +33,10 @@
 #       vector of predicted values
 
 #########################  qeFairRidge()  #################################
+
+# lambdas: ridge-type L2 regularizers
  
-qeFairRidgeLin <- function(data,yName,lambdas,
+qeFairRidgeLin <- function(data,yName,lambdas,sensNames=NULL,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
    require(qeML)
@@ -41,24 +44,27 @@ qeFairRidgeLin <- function(data,yName,lambdas,
    if (length(setdiff(names(lambdas),names(data))) > 0)
       stop('invalid feature name')
 
+   nonSensNames <- setdiff(names(data),sensNames)
+   data1 <- data[nonSensNames]
+
    # standard qe*-series code for ML methods needing numeric X
-   trainRow1 <- getRow1(data,yName)
-   if (!is.null(holdout)) splitData(holdout,data)
-   xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=FALSE,
+   trainRow1 <- getRow1(data1,yName)
+   if (!is.null(holdout)) splitData(holdout,data1)
+   xyc <- getXY(data1,yName,xMustNumeric=TRUE,classif=FALSE,
       makeYdumms=TRUE)
    x <- xyc$x
    colnamesX <- colnames(x)
    xm <- as.matrix(x)
 
    # need to update lambdas re X dummies
-   yCol <- which(names(data) == yName)
-   isf <- sapply(1:length(names(data[,-yCol])),
-      function(col) is.factor(data[[col]]))
+   yCol <- which(names(data1) == yName)
+   isf <- sapply(1:length(names(data1[,-yCol])),
+      function(col) is.factor(data1[[col]]))
    isf <- which(isf)
    newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
    # now for the factor sensitive variables
    for (i in isf) {
-      lvls <- levels(data[,i])
+      lvls <- levels(data1[,i])
       lvls <- lvls[-length(lvls)]
       newLambdas[lvls] <- lambdas[[colnamesX[i]]]
    }
@@ -94,6 +100,8 @@ qeFairRidgeLin <- function(data,yName,lambdas,
    srout <- list(bhat=bhat,
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'),ybar=ybar)
    srout$classif <- FALSE
+   srout$lambdas <- lambdas
+   srout$sensNames <- sensNames
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRidgeLin')
@@ -121,7 +129,7 @@ predict.qeFairRidgeLin <- function(object,newx)
    preds
 }
  
-qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
+qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,start=NULL,nIters=10,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
    require(qeML)
@@ -129,13 +137,16 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    if (length(setdiff(names(lambdas),names(data))) > 0)
       stop('invalid feature name')
 
+   nonSensNames <- setdiff(names(data),sensNames)
+   data1 <- data[nonSensNames]
+
    # standard qe*-series code for ML methods needing numeric X; here we
    # have a classification problem, so getXY() will also create a dummy
    # for each level of the factor Y
-   trainRow1 <- getRow1(data,yName)
-   classif <- is.factor(data[[yName]])
-   if (!is.null(holdout)) splitData(holdout,data)
-   xyc <- getXY(data,yName,xMustNumeric=TRUE,classif=classif,
+   trainRow1 <- getRow1(data1,yName)
+   classif <- is.factor(data1[[yName]])
+   if (!is.null(holdout)) splitData(holdout,data1)
+   xyc <- getXY(data1,yName,xMustNumeric=TRUE,classif=classif,
       makeYdumms=TRUE)
    xy <- xyc$xy
    x <- xyc$x
@@ -153,7 +164,7 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
    empirClassProbs <- colMeans(yDumms)
 
    # need to update lambdas re X dummies
-   lambdas <- expandLambdas(data,yName,lambdas)
+   lambdas <- expandLambdas(data1,yName,lambdas)
 
    factorsInfo <- xyc$factorsInfo
    if (!is.null(factorsInfo)) attr(xm,'factorsInfo') <- factorsInfo
@@ -173,6 +184,8 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
       ctr=attr(xm,'scaled:center'),scl=attr(xm,'scaled:scale'))
    srout$classif <- classif
    srout$yName <- yName
+   srout$lambdas <- lambdas
+   srout$sensNames <- sensNames
    srout$factorsInfo <- factorsInfo
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRidgeLog')
@@ -180,6 +193,8 @@ qeFairRidgeLog <- function(data,yName,lambdas,start=NULL,nIters=10,
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
    } else srout$holdIdxs <- NULL
+   if (!is.null(sensNames)) 
+      srout$corrs <- corrsens(data,yName,srout,
    srout
 }
 
