@@ -6,7 +6,7 @@
 
 # it is assumed that variables that are directly sensitive have been
 # excluded from the ML analysis that returned fittedObject; only
-# "supporting" variables have been used in the analysis; e.g. we are
+# "proxyorting" variables have been used in the analysis; e.g. we are
 # worred about Age so it is excluded but YearsOfWorkExperience has not
 
 # for now, the classification case only allows binary Y, still required
@@ -16,13 +16,14 @@
 
 #    data: as in qeFair*(); the full dataset, not e.g. a training set
 #    yName: as in qeFair*()
-#    sensNames: names in 'data' of sensitive cols, excluded in ML analysis
-#    suppNames: column names in 'data' playing a "supporting role" in
+#    sensNames: names in 'data' of sensitive cols, if any, 
+#       excluded in ML analysis
+#    proxyNames: column names in 'data' playing a "proxyorting role" in
 #       'sensNames', i.e. related to 'sensNames' but not excluded
 #    fittedObject: return value from qeFair*(); latter needs to have
 #       been called with non-NULL holdout
 
-corrsens <- function(data,yName,fittedObject,suppNames) 
+corrsens <- function(data,yName,fittedObject,proxyNames,sensNames=NULL) 
 {
    classif <- fittedObject$classif
    if (is.null(classif)) stop('"classif" missing in fittedObject')
@@ -30,20 +31,31 @@ corrsens <- function(data,yName,fittedObject,suppNames)
    preds <- if(classif) fittedObject$holdoutPreds$probs
             else fittedObject$holdoutPreds
 
-   xNames <- setdiff(names(data),c(yName,suppNames))
+   xNames <- setdiff(names(data),c(yName,proxyNames))
    
    holdIdxs <- fittedObject$holdIdxs
-   corrs <- rep(0,length(suppNames))  # eventual output
-   names(corrs) <- suppNames
-   for (suppNm in suppNames) {
+   corrs <- NULL  # eventual output
+   nCorrs <- 0
+   for (sensNm in sensNames) {
 
-      supp <- data[[suppNm]][holdIdxs]
-      if (is.factor(supp)) {
-         if (length(levels(supp)) != 2) stop('factor Y must have 2 levels')
-         tmp <- glm(supp ~ .,data=data[xNames],family=binomial())
-         supp <- tmp$fitted.values
+      sens <- data[[sensNm]][holdIdxs]
+      if (is.factor(sens)) {
+         
+         lvls <- levels(sens)
+         tmp <- qeLogit(data[xNames],sensNm,family=binomial())
+         nCols <- if (length(lvls) == 2) 1 else ncol(preds)
+         for (i in 1:nCols) {
+            sens <- preds[,i]
+            nm <- paste0(sensNm,'.',colnames(preds)[i]
+            corrs[nm] <- cor(preds[,1],sens)
+         }
+      } else {
+         corrs <- c(corrs,cor(preds,sens)
+         nCorrs <- nCorrs + 
+         names(corrs[nCorrs] <- sensNm
+         
+         sensNm] <- cor(preds[,1],sens)
       }
-      corrs[suppNm] <- cor(preds[,1],supp)
 
    }
 
