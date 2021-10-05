@@ -109,6 +109,8 @@ qeFairRidgeLin <- function(data,yName,lambdas,sensNames=NULL,
       predictHoldout(srout)
       srout$holdIdxs <- holdIdxs
    } else srout$holdIdxs <- NULL
+   if (!is.null(sensNames)) 
+      srout$corrs <- corrsens(data,yName,srout,sensNames)
    srout
 }
 
@@ -129,7 +131,8 @@ predict.qeFairRidgeLin <- function(object,newx)
    preds
 }
  
-qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,start=NULL,nIters=10,
+qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,
+   start=NULL,nIters=10,
    holdout=floor(min(1000,0.1*nrow(data))))
 {
    require(qeML)
@@ -144,7 +147,7 @@ qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,start=NULL,nIters=1
    # have a classification problem, so getXY() will also create a dummy
    # for each level of the factor Y
    trainRow1 <- getRow1(data1,yName)
-   classif <- is.factor(data1[[yName]])
+   classif <- TRUE
    if (!is.null(holdout)) splitData(holdout,data1)
    xyc <- getXY(data1,yName,xMustNumeric=TRUE,classif=classif,
       makeYdumms=TRUE)

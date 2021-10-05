@@ -45,11 +45,12 @@ corrsens <- function(data,yName,fittedObject,sensNames=NULL)
       # resulting dummies
       if (is.factor(sens)) {
          # item 1 above
-         tmp <- qeLogit(data[xSensNames],sensNm,family=binomial())
-         sensProbs <- tmp$preClasses$probs
+         tmp <- qeLogit(data[xSensNames],sensNm)
+         sensProbs <- tmp$predClasses$probs
          # item 2; want 1 col of probs for Bernoulli sens, or 1 col for
          # each dummy in the categorical case
          lvls <- levels(sens)
+         browser()
          nCols <- if (length(lvls) == 2) 1 else ncol(sensProbs)
          for (i in 1:nCols) {
             sens <- sensProbs[,i]
