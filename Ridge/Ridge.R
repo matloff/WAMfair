@@ -194,7 +194,7 @@ qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,start=NULL,nIters=1
       srout$holdIdxs <- holdIdxs
    } else srout$holdIdxs <- NULL
    if (!is.null(sensNames)) 
-      srout$corrs <- corrsens(data,yName,srout,
+      srout$corrs <- corrsens(data,yName,srout,sensNames)
    srout
 }
 
