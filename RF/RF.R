@@ -47,7 +47,6 @@ qeFairRF <- function(data,yName,deweightNames,deweightVal,sensNames=NULL,
 
    # standard qe*-series code for ML methods needing numeric X
    trainRow1 <- getRow1(data1,yName)
-   if (!is.null(holdout)) splitData(holdout,data1)
    xyc <- getXY(data1,yName,xMustNumeric=FALSE,classif=FALSE,
       makeYdumms=FALSE)
    x <- xyc$x
@@ -55,7 +54,7 @@ qeFairRF <- function(data,yName,deweightNames,deweightVal,sensNames=NULL,
    xm <- as.matrix(x)
 
    rfout <- qeRFranger(data1,yName,deweightNames,deweightVal,
-      nTree=nTree,minNodeSize=minNodeSize,mtry=mtry)
+      nTree=nTree,minNodeSize=minNodeSize,mtry=mtry,holdout=holdout)
 
    srout <- list(rfout=rfout)
    srout$classif <- TRUE
@@ -64,17 +63,17 @@ qeFairRF <- function(data,yName,deweightNames,deweightVal,sensNames=NULL,
    srout$sensNames <- sensNames
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRF')
-   if (!is.null(holdout)) {
-      predictHoldout(srout)
-      srout$holdIdxs <- holdIdxs
-   } else {
-      srout$holdIdxs <- 1:nrow(data)
-      yCol <- which(names(data) == yName)
-      dataX <- data1[,-yCol]
-   browser()
-      tmp <- predict(rfout,dataX)
-      srout$holdoutPreds <- tmp$preds
-   }
+   srout$holdIdxs <- rfout$holdIdxs
+   srout$holdoutPreds <- rfout$holdoutPreds
+   srout$testAcc <- rfout$testAcc
+   srout$baseAcc <- rfout$baseAcc
+   srout$confusion <- rfout$confusion
+
+###    yCol <- which(names(data) == yName)
+###    dataX <- data1[,-yCol]
+###    tmp <- predict(rfout,dataX)
+###    srout$holdoutPreds <- tmp$preds
+
    if (!is.null(sensNames)) 
       srout$corrs <- corrsens(data,yName,srout,sensNames)
    srout
