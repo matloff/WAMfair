@@ -37,7 +37,6 @@ corrsens <- function(data,yName,fittedObject,sensNames=NULL)
    corrs <- NULL  # eventual output
    nCorrs <- 0
    for (sensNm in sensNames) {
-               browser()
       sens <- data[sensNm][holdIdxs,]
       # the case of factor sens is more complex, for 2 reasons:
       # 1. we must change the 1 or more dummies to probabilities, so
