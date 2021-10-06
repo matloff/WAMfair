@@ -65,11 +65,6 @@ qeFairKNN <- function(data,yName,
    srout$baseAcc <- knnout$baseAcc
    srout$confusion <- knnout$confusion
 
-###    yCol <- which(names(data) == yName)
-###    dataX <- data1[,-yCol]
-###    tmp <- predict(knnout,dataX)
-###    srout$holdoutPreds <- tmp$preds
-
    if (!is.null(sensNames)) 
       srout$corrs <- corrsens(data,yName,srout,sensNames)
    srout
