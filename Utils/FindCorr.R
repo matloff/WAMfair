@@ -37,7 +37,8 @@ corrsens <- function(data,yName,fittedObject,sensNames=NULL)
    corrs <- NULL  # eventual output
    nCorrs <- 0
    for (sensNm in sensNames) {
-      sens <- data[[sensNm]][holdIdxs]
+               browser()
+      sens <- data[sensNm][holdIdxs,]
       # the case of factor sens is more complex, for 2 reasons:
       # 1. we must change the 1 or more dummies to probabilities, so
       # that cor() makes sense, and 2. if this is a categorical
@@ -45,22 +46,32 @@ corrsens <- function(data,yName,fittedObject,sensNames=NULL)
       # resulting dummies
       if (is.factor(sens)) {
          # item 1 above
-         tmp <- qeLogit(data[xSensNames],sensNm)
-         sensProbs <- tmp$predClasses$probs
-         # item 2; want 1 col of probs for Bernoulli sens, or 1 col for
-         # each dummy in the categorical case
          lvls <- levels(sens)
-         browser()
-         nCols <- if (length(lvls) == 2) 1 else ncol(sensProbs)
-         for (i in 1:nCols) {
-            sens <- sensProbs[,i]
-            corrs <- c(corrs,cor(preds[,i],sens))
+         sens <- as.numeric(sens)
+         nLvls <- length(lvls)
+         if (nLvls == 2) {
+            frml <- paste0(sensNm,' ~ .')
+            frml <- as.formula(frml)
+            tmp <- glm(frml,data[xSensNames],family=binomial())
+            sensProbs <- tmp$fitted.values[holdIdxs]
+            corrs <- c(corrs,cor(preds,sensProbs)^2)
             nCorrs <- nCorrs + 1
-            nm <- paste0(sensNm,'.',colnames(preds)[i])
-            names(corrs)[nCorrs] <- nm
+            names(corrs)[nCorrs] <- sensNm
+         } else {
+            # item 2; want 1 col of probs for Bernoulli sens, or 1 col 
+            # for each dummy in the categorical case
+            tmp <- qeLogit(data[xSensNames],sensNm,holdout=NULL)
+            for (i in 1:length(tmp$glmOuts)) {
+               glmout <- tmp$glmOuts[[i]]
+               sens <- glmout$fitted.values[holdIdxs]
+               corrs <- c(corrs,cor(preds,sens)^2)
+               nCorrs <- nCorrs + 1
+               nm <- paste0(sensNm,'.',lvls[i])
+               names(corrs)[nCorrs] <- nm
+            }
          }
       } else {
-         corrs <- c(corrs,cor(preds,sens))
+         corrs <- c(corrs,cor(preds,sens)^2)
          nCorrs <- nCorrs + 1
          names(corrs)[nCorrs] <- sensNm
       }
