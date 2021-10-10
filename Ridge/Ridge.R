@@ -95,6 +95,12 @@ qeFairRidgeLin <- function(data,yName,lambdas,sensNames=NULL,
 
    # solve for beta-hats
    bhat <- solve(xpx + diag(d)) %*% xpy
+   if (any(is.na(bhat))) {
+      subs <- which(is.na(bhat))
+      print('NA values in bhat:')
+      print(names(bhat)[subs])
+      stop('exiting due to bhat NAs')
+   }
    bhat <- as.vector(bhat)
 
    srout <- list(bhat=bhat,
@@ -106,7 +112,7 @@ qeFairRidgeLin <- function(data,yName,lambdas,sensNames=NULL,
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRidgeLin')
    if (!is.null(holdout)) {
-      predictHoldout(srout)
+      predictHoldoutFair(srout)
       srout$holdIdxs <- holdIdxs
    } else srout$holdIdxs <- NULL
    if (!is.null(sensNames)) 
@@ -178,6 +184,12 @@ qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,
       names(tmpDF)[nx + 1] <- "yDumm"
       bhat <- glmFitLambda(xm,yDumms[,colI],start=start,family=binomial(),
          lambdas,nIters) 
+      if (any(is.na(bhat))) {
+         subs <- which(is.na(bhat))
+         print('NA values in bhat:')
+         print(names(bhat)[subs])
+         stop('exiting due to bhat NAs')
+      }
       bhat     
    }
 
@@ -193,7 +205,7 @@ qeFairRidgeLog <- function(data,yName,lambdas,sensNames=NULL,
    srout$trainRow1 <- trainRow1
    class(srout) <- c('qeFairRidgeLog')
    if (!is.null(holdout)) { 
-      predictHoldout(srout)
+      predictHoldoutFair(srout)
       srout$holdIdxs <- holdIdxs
    } else srout$holdIdxs <- NULL
    if (!is.null(sensNames)) 
@@ -279,7 +291,7 @@ predict.qeFairRidgeLog <- function(object,newx)
 ##    srout$trainRow1 <- trainRow1
 ##    class(srout) <- c('qeFairRidgeScutari')
 ##    if (!is.null(holdout)) { 
-##       predictHoldout(srout)
+##       predictHoldoutFair(srout)
 ##       srout$holdIdxs <- holdIdxs
 ##    } else srout$holdIdxs <- NULL
 ##    srout
