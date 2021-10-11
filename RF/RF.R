@@ -53,8 +53,10 @@ qeFairRF <- function(data,yName,deweightNames,deweightVal,sensNames=NULL,
    colnamesX <- colnames(x)
    xm <- as.matrix(x)
 
-   rfout <- qeRFranger(data1,yName,deweightNames,deweightVal,
-      nTree=nTree,minNodeSize=minNodeSize,mtry=mtry,holdout=holdout)
+   rfout <- qeRFranger(data1,yName,
+      nTree=nTree,minNodeSize=minNodeSize,mtry=mtry,
+      deweightNames=deweightNames,deweightVal=deweightVal,
+      holdout=holdout)
 
    srout <- list(rfout=rfout)
    srout$classif <- TRUE
@@ -69,13 +71,12 @@ qeFairRF <- function(data,yName,deweightNames,deweightVal,sensNames=NULL,
    srout$baseAcc <- rfout$baseAcc
    srout$confusion <- rfout$confusion
 
-###    yCol <- which(names(data) == yName)
-###    dataX <- data1[,-yCol]
-###    tmp <- predict(rfout,dataX)
-###    srout$holdoutPreds <- tmp$preds
-
-   if (!is.null(sensNames)) 
+   if (!is.null(sensNames)) {
       srout$corrs <- corrsens(data,yName,srout,sensNames)
+      srout$sensConfusion <- calcSensConfusion(data,data1,yName,
+         srout$holdIdxs,srout$holdoutPreds,sensNames)
+   }
+
    srout
 }
 

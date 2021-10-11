@@ -30,4 +30,23 @@ predictHoldoutFair <- defmacro(res,
       }
    }
 )
+
+# calculate the confusion matrix for each factor in sensNames
+
+calcSensConfusion <- function(data,dataNoSens,yName,idxs,preds,sensNames) 
+{
+   ycol <- which(names(dataNoSens) == yName)
+   tst <- dataNoSens[idxs,]
+browser()
+
+   doOneConfMatrix <- function(sensName) 
+   {
+      tmp <- sensName
+      sens <- data[[tmp]][idxs]
+      tbl <- table(tst[,ycol],preds$predClasses,sens)
+      tbl/sum(tbl)
+   }
+
+   lapply(sensNames,doOneConfMatrix)
          
+}
