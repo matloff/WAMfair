@@ -20,8 +20,7 @@ predictHoldoutFair <- defmacro(res,
          {
             tmp <- sensName
             sens <- data[[tmp]][idxs]
-            tbl <- table(tst[,ycol],preds$predClasses,sens)
-            tbl/sum(tbl)
+            table(tst[,ycol],preds$predClasses,sens)
          }
          res$sensConfusion <- lapply(sensNames,doOneConfMatrix)
       } else {
@@ -37,14 +36,12 @@ calcSensConfusion <- function(data,dataNoSens,yName,idxs,preds,sensNames)
 {
    ycol <- which(names(dataNoSens) == yName)
    tst <- dataNoSens[idxs,]
-browser()
 
    doOneConfMatrix <- function(sensName) 
    {
       tmp <- sensName
       sens <- data[[tmp]][idxs]
-      tbl <- table(tst[,ycol],preds$predClasses,sens)
-      tbl/sum(tbl)
+      table(tst[,ycol],preds$predClasses,sens)
    }
 
    lapply(sensNames,doOneConfMatrix)
