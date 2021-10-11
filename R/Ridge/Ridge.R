@@ -57,18 +57,19 @@ qeFairRidgeLin <- function(data,yName,lambdas,sensNames=NULL,
    xm <- as.matrix(x)
 
    # need to update lambdas re X dummies
-   yCol <- which(names(data1) == yName)
-   isf <- sapply(1:length(names(data1[,-yCol])),
-      function(col) is.factor(data1[[col]]))
-   isf <- which(isf)
-   newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
-   # now for the factor sensitive variables
-   for (i in isf) {
-      lvls <- levels(data1[,i])
-      lvls <- lvls[-length(lvls)]
-      newLambdas[lvls] <- lambdas[[colnamesX[i]]]
-   }
-   lambdas <- newLambdas
+#    yCol <- which(names(data1) == yName)
+#    isf <- sapply(1:length(names(data1[,-yCol])),
+#       function(col) is.factor(data1[[col]]))
+#    isf <- which(isf)
+#    newLambdas <- lambdas[-isf]  # the nonfactor sensitive variables
+#    # now for the factor sensitive variables
+#    for (i in isf) {
+#       lvls <- levels(data1[,i])
+#       lvls <- lvls[-length(lvls)]
+#       newLambdas[lvls] <- lambdas[[colnamesX[i]]]
+#    }
+#    lambdas <- newLambdas
+   lambdas <- expandLambdas(data1,yName,lambdas)
 
    # scale X data
    xm <- scale(xm)
