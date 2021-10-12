@@ -30,7 +30,8 @@ predictHoldoutFair <- defmacro(res,
    }
 )
 
-# calculate the confusion matrix for each factor in sensNames
+# calculate the confusion matrix for each factor in sensNames (assumed
+# to all be factors)
 
 calcSensConfusion <- function(data,dataNoSens,yName,idxs,preds,sensNames) 
 {
@@ -46,4 +47,17 @@ calcSensConfusion <- function(data,dataNoSens,yName,idxs,preds,sensNames)
 
    lapply(sensNames,doOneConfMatrix)
          
+}
+
+# calculate conditional probabilities in a 2x2 table output by
+# calcSensConfusion(); say table is rbind(c(u,v),c(w,x)); then output
+# c(x/(w+x),x/(v+x)); tableNum is the third coordinate of the 3-dim
+# array output by calcSensConfusion()
+
+yesyes <- function(cSCout,tableNum) 
+{
+   ary <- cSCout[[1]]
+   tbl <- ary[,,tableNum]
+   x <- tbl[2,2]; w <- tbl[2,1]; v <- tbl[1,2]
+   c(x/(w+x),x/(v+x));
 }
