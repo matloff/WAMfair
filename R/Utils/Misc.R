@@ -54,10 +54,16 @@ calcSensConfusion <- function(data,dataNoSens,yName,idxs,preds,sensNames)
 # c(x/(w+x),x/(v+x)); tableNum is the third coordinate of the 3-dim
 # array output by calcSensConfusion()
 
-yesyes <- function(cSCout,tableNum) 
+nonoyesyes <- function(cSCout,tableNum) 
 {
    ary <- cSCout[[1]]
    tbl <- ary[,,tableNum]
-   x <- tbl[2,2]; w <- tbl[2,1]; v <- tbl[1,2]
-   c(x/(w+x),x/(v+x));
+   x <- tbl[2,2]; w <- tbl[2,1]; v <- tbl[1,2]; u <- tbl[1,1]
+   l <- list(
+      NoPredNoActual=u/(u+w),
+      NoActualNoPred=u/(u+v),
+      YesPredYesActual=x/(v+x),
+      YesActualYesPred=x/(x+w))     
+   c(l[[1]],l[[2]],l[[3]],l[[4]])
 }
+
