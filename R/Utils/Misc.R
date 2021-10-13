@@ -86,13 +86,25 @@ nonoyesyes <- function(cSCout,tableNum)
 # finally compute the mean ratios across all neighborhoods; the closer
 # these are to 1.0, the fairer the analysis
 
-dispTreat <- function(data,yName,sName,classif,qeFairOut,k,nSam) 
+dispTreat <- function(data,yName,sName,classif,qeFairOut,k,nSam,yYesName)
 {
    ycol <- which(names(data) == yName)
+   yvec <- data[,ycol]
+   if (is.factor(yvec) && length(levels(yvec)) == 2)
+      if (length(yYesName) > 0) {
+         whichYes <- which(yvec == yYesName)
+         yvec <- as.character(yvec)
+         yvec[whichYes] <- '1'
+         yvec[-whichYes] <- '0'
+         yvec <- as.factor(yvec)
+         data[,ycol] <- yvec
+      } else stop('empty yYesName')
    scol <- which(names(data) == sName)
    data <- data[sample(1:nrow(data),nSam),]
+   dataXS <- data[,-c(ycol)]
    dataX <- data[,-c(ycol,scol)]
    dataXdumms <- factorsToDummies(dataX)
+   Y <- data[[yName]]
    S <- data[[sName]]
    if (is.numeric(S)) S <- as.factor(S)
    sLevels <- levels(S)
@@ -115,18 +127,21 @@ dispTreat <- function(data,yName,sName,classif,qeFairOut,k,nSam)
       tmp$nn.index[,1:k]
    }
 
-   ratioMeans <- matrix(nrow=n,ncol=nSlevels-1)
+   ratioMeans <- matrix(0,nrow=n,ncol=nSlevels-1)
    for (i in 1:nrow(data)) {
       nearIdxs <- findNbhd(dataXdumms[i,])  # indices of the neighborhood
+      # browser()
+      bySlevel <- NULL
       bySlevel <- 
          split(nearIdxs,S[nearIdxs])  # one set of indices for each S value
       checkEmpty <- sapply(bySlevel,length)
       if (any(checkEmpty == 0)) next
       preds <- lapply(1:length(bySlevel),predictGroup)  
-print(preds[[2]][1])
       for (g in 2:nSlevels) {
-         tmp <- mean(preds[[1]]) / mean(preds[[g]])
-         ratioMeans[i,g-1] <- tmp
+         if (sum(preds[[g]]) > 0) {
+            tmp <- mean(preds[[1]]) / mean(preds[[g]])
+            ratioMeans[i,g-1] <- tmp
+         }
       }
    }
 
