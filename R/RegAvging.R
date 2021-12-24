@@ -8,6 +8,12 @@
 
 regAvg <- function(data,yName,qeFtn,grpName) 
 {
+   if(is.factor(data[[yName]])) {
+      if (length(levels(data[[yName]])) > 2)
+         stop('Y must be binary or continuous')
+      classif <- TRUE
+   } else classif <- FALSE
+
    grps <- split(data,data[[grpName]])
    # get XY data by removing grouping variable
    grpsXY <- lapply(grps,function(grp) {grp[[grpName]] <- NULL; grp})
@@ -17,7 +23,6 @@ regAvg <- function(data,yName,qeFtn,grpName)
    qeObjs <- lapply(grpsXY,
       function(grp) qeFtn(grp,yName,holdout=NULL))
 
-   classif <- is.factor(data[[yName]])
    nGrps <- length(grps)
    avgs <- matrix(nrow=nGrps,ncol=nGrps)
    rownames(avgs) <- levels(data[[grpName]])
@@ -31,8 +36,8 @@ regAvg <- function(data,yName,qeFtn,grpName)
             if (classif) tmp <- as.numeric(tmp) - 1
             avgs[i,i] <- mean(tmp)
          } else {
-            grpsxj <- grpsX[[j]]
-            tmp <- predict(qeObjs[[i]],grpsxj)
+            grpsxj <- grpsX[[i]]
+            tmp <- predict(qeObjs[[j]],grpsxj)
             if (classif) tmp <- tmp$probs[,1]
             avgs[i,j] <- mean(tmp)
          }
