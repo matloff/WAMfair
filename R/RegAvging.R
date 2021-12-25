@@ -1,4 +1,19 @@
 
+# counterfactual, How would Group A fare if subjected the policies for
+# Group B?
+
+# arguments:
+# 
+#    data: a data frame
+#    yName: name of Y column
+#    qeFtn: a ftn from the qeML pkg
+#    grpName: name of the grouping column
+#    yYes: for binary Y, name of the positive factor level
+#    grpIntervals: for continuous grouping variable, break into
+#       this mean intervals
+
+# value: matrix of the counterfactual means
+
 # 'data' will be grouped according to 'grpName'; then 
 # within each group 'qeFtn' will be applied with 'yName' as Y, resulting
 # in 'qeObj'; then each 'qeObj' will be used to predict in all the other
@@ -6,7 +21,7 @@
 
 # for now, default values will be used for qeFtn()
 
-regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL) 
+regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL,grpIntervals=NULL) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
@@ -14,6 +29,10 @@ regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL)
       if (is.null(yYes)) stop('null yYes, binary Y')
       classif <- TRUE
    } else classif <- FALSE
+
+   grpvar <- data[[grpName]]
+   if (!is.factor(grpvar)) 
+      data[[grpName]] <- cut(grpvar,grpIntervals)
 
    grps <- split(data,data[[grpName]])
    # get XY data by removing grouping variable
