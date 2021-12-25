@@ -6,11 +6,12 @@
 
 # for now, default values will be used for qeFtn()
 
-regAvg <- function(data,yName,qeFtn,grpName) 
+regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
          stop('Y must be binary or continuous')
+      if (is.null(yYes)) stop('null yYes, binary Y')
       classif <- TRUE
    } else classif <- FALSE
 
@@ -38,7 +39,7 @@ regAvg <- function(data,yName,qeFtn,grpName)
          } else {
             grpsxj <- grpsX[[i]]
             tmp <- predict(qeObjs[[j]],grpsxj)
-            if (classif) tmp <- tmp$probs[,1]
+            if (classif) tmp <- tmp$probs[,yYes]
             avgs[i,j] <- mean(tmp)
          }
       }
