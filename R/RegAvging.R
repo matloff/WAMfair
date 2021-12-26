@@ -21,7 +21,8 @@
 
 # for now, default values will be used for qeFtn()
 
-regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL,grpIntervals=NULL) 
+regAvg <- function(data,yName,qeFtn,grpName,
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
@@ -54,12 +55,12 @@ regAvg <- function(data,yName,qeFtn,grpName,yYes=NULL,grpIntervals=NULL)
             # EY = E[E(Y|X)]
             tmp <- grps[[i]][[yName]]
             if (classif) tmp <- as.numeric(tmp) - 1
-            avgs[i,i] <- mean(tmp)
+            avgs[i,i] <- mean(tmp,na.rm=naRM)
          } else {
             grpsxj <- grpsX[[i]]
             tmp <- predict(qeObjs[[j]],grpsxj)
             if (classif) tmp <- tmp$probs[,yYes]
-            avgs[i,j] <- mean(tmp)
+            avgs[i,j] <- mean(tmp,na.rm=naRM)
          }
       }
    
