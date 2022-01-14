@@ -22,7 +22,7 @@
 # for now, default values will be used for qeFtn()
 
 regAvg <- function(data,yName,qeFtn,grpName,
-   yYes=NULL,grpIntervals=NULL,naRM=TRUE) 
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE,fPos=FALSE) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
@@ -51,7 +51,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
 
    for (i in 1:nGrps)
       for (j in 1:nGrps) {
-         if (i == j) {
+         if (i == j && !fPos) {
             # EY = E[E(Y|X)]
             tmp <- grps[[i]][[yName]]
             if (classif) tmp <- as.numeric(tmp) - 1
@@ -59,8 +59,15 @@ regAvg <- function(data,yName,qeFtn,grpName,
          } else {
             grpsxj <- grpsX[[i]]
             tmp <- predict(qeObjs[[j]],grpsxj)
-            if (classif) tmp <- tmp$probs[,yYes]
-            avgs[i,j] <- mean(tmp,na.rm=naRM)
+            if (!fPos) {
+               if (classif) tmp <- tmp$probs[,yYes]
+               avgs[i,j] <- mean(tmp,na.rm=naRM)
+            } else {
+               tmp <- tmp$probs[,yYes]
+               num <- mean( (tmp >= 0.5) * (1 - tmp) )
+               den <- mean(tmp >= 0.5)
+               avgs[i,j] <- num/den
+            }
          }
       }
    
