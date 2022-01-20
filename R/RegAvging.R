@@ -1,6 +1,6 @@
 
 # counterfactual, How would Group A fare if subjected the policies for
-# Group B?
+# Group B? 
 
 # arguments:
 # 
