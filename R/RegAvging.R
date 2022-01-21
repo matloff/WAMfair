@@ -22,7 +22,7 @@
 # for now, default values will be used for qeFtn()
 
 regAvg <- function(data,yName,qeFtn,grpName,
-   yYes=NULL,grpIntervals=NULL,naRM=TRUE,fPos=FALSE) 
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE,fPos=FALSE,stdErr=FALSE) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
@@ -57,8 +57,25 @@ regAvg <- function(data,yName,qeFtn,grpName,
             if (classif) tmp <- as.numeric(tmp) - 1
             avgs[i,i] <- mean(tmp,na.rm=naRM)
          } else {
-            grpsxj <- grpsX[[i]]
-            tmp <- predict(qeObjs[[j]],grpsxj)
+            grpsxi <- grpsX[[i]]
+            tmp <- predict(qeObjs[[j]],grpsxi)
+
+            if (stdErr) {
+               # for now, just print out; later make it optional, part
+               # of an R list return value; and this code should be a
+               # separate function
+               ai <- colMeans(grpsxi)
+               cvbj <- vcov(qeObjs[[j]])
+               cvbj <- cvbj[-1,-1]
+               bj <- coef(qeObjs[[j]])
+               bj <- bj[-1]
+               cvxi <- cov(grpsxi)
+               ni <- nrow(grpsxi)
+               term1 <- t(ai) %*% cvbj %*% ai
+               term2 <- t(bj) %*% cvxi %*% bj / ni
+               cat(i,j,sqrt(term1+term2),'\n')
+            }
+
             if (!fPos) {
                if (classif) tmp <- tmp$probs[,yYes]
                avgs[i,j] <- mean(tmp,na.rm=naRM)
