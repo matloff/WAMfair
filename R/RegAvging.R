@@ -1,4 +1,6 @@
 
+# companion code for the Walk a Mile method of assessing fairness in ML
+
 # counterfactual, How would Group A fare if subjected the policies for
 # Group B? 
 
@@ -41,9 +43,11 @@ regAvg <- function(data,yName,qeFtn,grpName,
    # get X data by removing Y variable
    grpsX <- lapply(grpsXY,function(grp) {grp[[yName]] <- NULL; grp})
    # do the model fits
-   qeObjs <- lapply(grpsXY,
-      function(grp) qeFtn(grp,yName,holdout=NULL))
-
+   qeObjs <- 
+      if (!classif) 
+         lapply(grpsXY,function(grp) qeFtn(grp,yName,holdout=NULL))
+      else
+         lapply(grpsXY,function(grp) qeFtn(grp,yName,yYes=yYes,holdout=NULL))
    nGrps <- length(grps)
    avgs <- matrix(nrow=nGrps,ncol=nGrps)
    rownames(avgs) <- levels(data[[grpName]])
