@@ -29,9 +29,11 @@ regAvg <- function(data,yName,qeFtn,grpName,
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
          stop('Y must be binary or continuous')
-      if (is.null(yYes)) stop('null yYes, binary Y')
       classif <- TRUE
    } else classif <- FALSE
+
+   # does qeFtn have a yesYVal arg?
+   needsYesYVal <- classif && 'yesYVal' %in% names(formals(qeFtn))
 
    grpvar <- data[[grpName]]
    if (!is.factor(grpvar)) 
@@ -44,7 +46,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
    grpsX <- lapply(grpsXY,function(grp) {grp[[yName]] <- NULL; grp})
    # do the model fits
    qeObjs <- 
-      if (!classif) 
+      if (!needsYesYVal) 
          lapply(grpsXY,function(grp) qeFtn(grp,yName,holdout=NULL))
       else
          lapply(grpsXY,function(grp) qeFtn(grp,yName,yesYVal=yYes,holdout=NULL))
@@ -80,11 +82,15 @@ regAvg <- function(data,yName,qeFtn,grpName,
                cat(i,j,sqrt(term1+term2),'\n')
             }
 
+            prbsY <- 
+               if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
+               else tmp$probs[,1]
+
             if (!fPos) {
-               if (classif) tmp <- tmp$probs[,yYes]
+               if (classif) tmp <- prbsY
                avgs[i,j] <- mean(tmp,na.rm=naRM)
             } else {
-               tmp <- tmp$probs[,yYes]
+               tmp <- prbsY
                num <- mean( (tmp >= 0.5) * (1 - tmp) )
                den <- mean(tmp >= 0.5)
                avgs[i,j] <- num/den
