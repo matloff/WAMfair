@@ -13,6 +13,8 @@
 #    yYes: for binary Y, name of the positive factor level
 #    grpIntervals: for continuous grouping variable, break into
 #       this mean intervals
+#    naRM:  TRUE means na.rm = TRUE in mean() calls
+#    stdErr:  compute standard errors
 
 # value: matrix of the counterfactual means
 
@@ -24,7 +26,7 @@
 # for now, default values will be used for qeFtn()
 
 regAvg <- function(data,yName,qeFtn,grpName,
-   yYes=NULL,grpIntervals=NULL,naRM=TRUE,fPos=FALSE,stdErr=FALSE) 
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE,stdErr=FALSE) 
 {
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
@@ -57,7 +59,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
 
    for (i in 1:nGrps)
       for (j in 1:nGrps) {
-         if (i == j && !fPos) {
+         if (i == j) {
             # EY = E[E(Y|X)]
             tmp <- grps[[i]][[yName]]
             if (classif) tmp <- as.numeric(tmp) - 1
@@ -82,22 +84,29 @@ regAvg <- function(data,yName,qeFtn,grpName,
                cat(i,j,sqrt(term1+term2),'\n')
             }
 
-            prbsY <- 
-               if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
-               else tmp$probs[,1]
-
-            if (!fPos) {
-               if (classif) tmp <- prbsY
-               avgs[i,j] <- mean(tmp,na.rm=naRM)
-            } else {
-               tmp <- prbsY
-               num <- mean( (tmp >= 0.5) * (1 - tmp) )
-               den <- mean(tmp >= 0.5)
-               avgs[i,j] <- num/den
+           if (classif) {
+               prbsY <- 
+                  if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
+                  else tmp$probs[,1]
+                  tmp <- prbsY
             }
+            avgs[i,j] <- mean(tmp,na.rm=naRM)
          }
       }
    
    avgs
 }
+
+# similar to regAvg(), but done separatewly so as to avoid code clutter
+# and confusion
+
+regAvgFPos <- function() 
+{
+   x <- 0
+#                 num <- mean( (tmp >= 0.5) * (1 - tmp) )
+#                 den <- mean(tmp >= 0.5)
+#                 avgs[i,j] <- num/den
+}
+
+rA <- regAvg
 
