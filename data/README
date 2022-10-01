@@ -1,0 +1,6 @@
+
+File have proper forms of the variable, e.g. R factors instead of
+character strings when appropriate.  Some files are saved versions of
+files from the 'fairml' package, which is imported by the package here,
+'WAMfair'.
+

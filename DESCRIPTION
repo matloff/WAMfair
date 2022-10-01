@@ -1,0 +1,14 @@
+Package: WAMfair
+Version: 1.0
+Title: WAMfair
+Authors@R: c(
+   person("Norm", "Matloff", email = "matloff@cs.ucdavis.edu",
+   role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785"))
+  )
+Maintainer: Norman Matloff <matloff@cs.ucdavis.edu>
+Imports: regtools, qeML,fairml
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
+License: GPL (>= 2)
+Description: Implements the "Walk a Mile in Their Shoes" method 
+  for fair ML.
