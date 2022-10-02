@@ -6,7 +6,7 @@ Authors@R: c(
    role = c("aut", "cre"), comment = c(ORCID = "0000-0001-9179-6785"))
   )
 Maintainer: Norman Matloff <matloff@cs.ucdavis.edu>
-Imports: regtools, qeML,fairml
+Depends: regtools, qeML,fairml
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 License: GPL (>= 2)

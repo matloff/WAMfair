@@ -12,7 +12,7 @@
 #    grpName: name of the grouping column
 #    yYes: for binary Y, name of the positive factor level
 #    grpIntervals: for continuous grouping variable, break into
-#       this mean intervals
+#       this many intervals
 #    naRM:  TRUE means na.rm = TRUE in mean() calls
 #    stdErr:  compute standard errors
 
