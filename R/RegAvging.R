@@ -28,6 +28,19 @@
 regAvg <- function(data,yName,qeFtn,grpName,
    yYes=NULL,grpIntervals=NULL,naRM=TRUE,stdErr=FALSE) 
 {
+
+   if (!is.function(qeFtn)) 
+      stop('arg 2 must be a function, not a function name')
+
+   yCol <- which(names(data) == yName)
+   grpCol <- which(names(data) == grpName)
+
+   if (stdErr) {
+      dataXNongrp <- data[,-c(yCol,grpCol)]
+      if (!allNumeric(dataXNongrp))
+         stop('for std errs, must have all numeric X')
+   }
+
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
          stop('Y must be binary or continuous')
@@ -52,6 +65,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
          lapply(grpsXY,function(grp) qeFtn(grp,yName,holdout=NULL))
       else
          lapply(grpsXY,function(grp) qeFtn(grp,yName,yesYVal=yYes,holdout=NULL))
+browser()
    nGrps <- length(grps)
    avgs <- matrix(nrow=nGrps,ncol=nGrps)
    rownames(avgs) <- levels(data[[grpName]])
@@ -97,6 +111,8 @@ regAvg <- function(data,yName,qeFtn,grpName,
    avgs
 }
 
+rA <- regAvg
+
 # similar to regAvg(), but done separatewly so as to avoid code clutter
 # and confusion
 
@@ -108,5 +124,23 @@ regAvgFPos <- function()
 #                 avgs[i,j] <- num/den
 }
 
-rA <- regAvg
+# to set up stdErr with qeLin, make all variables numeric except Y and
+# the group variable
+
+makeAllXNumeric <- function(data,yName,grpName)
+{
+   yCol <- which(names(data) == yName)
+   grpCol <- which(names(data) == grpName)
+
+   X <- data[,-c(yCol,grpCol)]
+   xd <- factorsToDummies(X,omitLast=TRUE)
+   res <- cbind(xd,data[,grpCol],data[,yCol])
+
+   nColRes <- ncol(res)
+   colnames(res)[(nColRes-1):nColRes] <- c(grpName,yName)
+
+   xd <- as.data.frame(xd)
+
+   res
+}
 
