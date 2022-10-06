@@ -65,7 +65,6 @@ regAvg <- function(data,yName,qeFtn,grpName,
          lapply(grpsXY,function(grp) qeFtn(grp,yName,holdout=NULL))
       else
          lapply(grpsXY,function(grp) qeFtn(grp,yName,yesYVal=yYes,holdout=NULL))
-browser()
    nGrps <- length(grps)
    avgs <- matrix(nrow=nGrps,ncol=nGrps)
    rownames(avgs) <- levels(data[[grpName]])
