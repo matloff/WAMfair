@@ -14,7 +14,6 @@
 #    grpIntervals: for continuous grouping variable, break into
 #       this many intervals
 #    naRM:  TRUE means na.rm = TRUE in mean() calls
-#    stdErr:  compute standard errors
 
 # value: matrix of the counterfactual means
 
@@ -26,7 +25,7 @@
 # for now, default values will be used for qeFtn()
 
 regAvg <- function(data,yName,qeFtn,grpName,
-   yYes=NULL,grpIntervals=NULL,naRM=TRUE,stdErr=FALSE) 
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE) 
 {
 
    if (!is.function(qeFtn)) 
@@ -35,17 +34,14 @@ regAvg <- function(data,yName,qeFtn,grpName,
    yCol <- which(names(data) == yName)
    grpCol <- which(names(data) == grpName)
 
-   if (stdErr) {
-      dataXNongrp <- data[,-c(yCol,grpCol)]
-      if (!allNumeric(dataXNongrp))
-         stop('for std errs, must have all numeric X')
-   }
-
    if(is.factor(data[[yName]])) {
       if (length(levels(data[[yName]])) > 2)
          stop('Y must be binary or continuous')
       classif <- TRUE
    } else classif <- FALSE
+
+   if (fPos && !classif) 
+      stop('FPR only makes sense for classification problems')
 
    # does qeFtn have a yesYVal arg?
    needsYesYVal <- classif && 'yesYVal' %in% names(formals(qeFtn))
@@ -66,44 +62,39 @@ regAvg <- function(data,yName,qeFtn,grpName,
       else
          lapply(grpsXY,function(grp) qeFtn(grp,yName,yesYVal=yYes,holdout=NULL))
    nGrps <- length(grps)
-   avgs <- matrix(nrow=nGrps,ncol=nGrps)
+
+   avgs <- matrix(nrow=nGrps,ncol=nGrps)  # our ultimate output
    rownames(avgs) <- levels(data[[grpName]])
    colnames(avgs) <- levels(data[[grpName]])
 
+   # what would happen if group i were subjected to the environment 
+   # of group j?
    for (i in 1:nGrps)
       for (j in 1:nGrps) {
-         if (i == j) {
-            # EY = E[E(Y|X)]
-            tmp <- grps[[i]][[yName]]
-            if (classif) tmp <- as.numeric(tmp) - 1
-            avgs[i,i] <- mean(tmp,na.rm=naRM)
-         } else {
-            grpsxi <- grpsX[[i]]
-            tmp <- predict(qeObjs[[j]],grpsxi)
-
-            if (stdErr) {
-               # for now, just print out; later make it optional, part
-               # of an R list return value; and this code should be a
-               # separate function
-               ai <- colMeans(grpsxi)
-               cvbj <- vcov(qeObjs[[j]])
-               cvbj <- cvbj[-1,-1]
-               bj <- coef(qeObjs[[j]])
-               bj <- bj[-1]
-               cvxi <- cov(grpsxi)
-               ni <- nrow(grpsxi)
-               term1 <- t(ai) %*% cvbj %*% ai
-               term2 <- t(bj) %*% cvxi %*% bj / ni
-               cat(i,j,sqrt(term1+term2),'\n')
+         if (! fPos) {
+            if (i == j) {
+               # EY = E[E(Y|X)]
+               tmp <- grps[[i]][[yName]]
+               if (classif) tmp <- as.numeric(tmp) - 1
+               avgs[i,i] <- mean(tmp,na.rm=naRM)
+            } else {
+               grpsxi <- grpsX[[i]]
+               tmp <- predict(qeObjs[[j]],grpsxi)
+   
+              if (classif) {
+                  prbsY <- 
+                     if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
+                     else tmp$probs[,1]
+                     tmp <- prbsY
+               }
+               avgs[i,j] <- mean(tmp,na.rm=naRM)
             }
-
-           if (classif) {
-               prbsY <- 
-                  if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
-                  else tmp$probs[,1]
-                  tmp <- prbsY
+         } else {  
+            # compute false positives; some duplicated code, but
+            # hopefully clearer that way
+            if (i == j) {
+            } else {
             }
-            avgs[i,j] <- mean(tmp,na.rm=naRM)
          }
       }
    
@@ -117,9 +108,8 @@ rA <- regAvg
 
 regAvgFPos <- function() 
 {
-   x <- 0
-#                 num <- mean( (tmp >= 0.5) * (1 - tmp) )
-#                 den <- mean(tmp >= 0.5)
-#                 avgs[i,j] <- num/den
+   num <- mean( (tmp >= 0.5) * (1 - tmp) )
+   den <- mean(tmp >= 0.5)
+   avgs[i,j] <- num/den
 }
 
