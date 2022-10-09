@@ -25,7 +25,7 @@
 # for now, default values will be used for qeFtn()
 
 regAvg <- function(data,yName,qeFtn,grpName,
-   yYes=NULL,grpIntervals=NULL,naRM=TRUE) 
+   yYes=NULL,grpIntervals=NULL,naRM=TRUE,fPos=FALSE) 
 {
 
    if (!is.function(qeFtn)) 
@@ -92,9 +92,15 @@ regAvg <- function(data,yName,qeFtn,grpName,
          } else {  
             # compute false positives; some duplicated code, but
             # hopefully clearer that way
-            if (i == j) {
-            } else {
-            }
+            grpsxi <- grpsX[[i]]
+            tmp <- predict(qeObjs[[j]],grpsxi)
+            prbsY <- 
+               if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
+               else tmp$probs[,1]
+            tmp <- prbsY
+            num <- mean( (tmp >= 0.5) * (1 - tmp) )
+            den <- mean(tmp >= 0.5)
+            avgs[i,j] <- num/den
          }
       }
    
@@ -103,13 +109,10 @@ regAvg <- function(data,yName,qeFtn,grpName,
 
 rA <- regAvg
 
-# similar to regAvg(), but done separatewly so as to avoid code clutter
-# and confusion
-
-regAvgFPos <- function() 
-{
-   num <- mean( (tmp >= 0.5) * (1 - tmp) )
-   den <- mean(tmp >= 0.5)
-   avgs[i,j] <- num/den
-}
+### regAvgFPos <- function() 
+### {
+###    num <- mean( (tmp >= 0.5) * (1 - tmp) )
+###    den <- mean(tmp >= 0.5)
+###    avgs[i,j] <- num/den
+### }
 
