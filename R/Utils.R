@@ -1,6 +1,5 @@
 
-# to set up stdErr with qeLin, make all variables numeric except Y and
-# the group variable
+# make all variables numeric except Y and the group variable
 
 # args:
 
@@ -32,4 +31,10 @@ makeAllXNumeric <- function(data,yName,grpName)
 }
 
 mAXN <- makeAllXNumeric
+
+Num01ToFactor01 <- function(x)   # x a vector of 0s, 1s
+{
+   xChar <- ifelse(x == 1,'1','0')
+   as.factor(xChar)
+}
 

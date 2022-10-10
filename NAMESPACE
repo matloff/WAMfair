@@ -2,5 +2,5 @@ import('qeML')
 import('regtools')
 import('gtools')
 
-export(regAvg,makeAllXNumeric,bootSEs)
+export(regAvg,makeAllXNumeric,bootSEs,Num01ToFactor01)
 
