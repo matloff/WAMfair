@@ -84,7 +84,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
               if (classif) {
                   prbsY <- 
                      if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
-                     else tmp$probs[,1]
+                     else tmp$probs[1,]
                      tmp <- prbsY
                }
                avgs[i,j] <- mean(tmp,na.rm=naRM)
@@ -96,7 +96,7 @@ regAvg <- function(data,yName,qeFtn,grpName,
             tmp <- predict(qeObjs[[j]],grpsxi)
             prbsY <- 
                if (ncol(tmp$probs) == 2)  tmp$probs[,yYes]
-               else tmp$probs[,1]
+               else tmp$probs[1,]
             tmp <- prbsY
             num <- mean( (tmp >= 0.5) * (1 - tmp) )
             den <- mean(tmp >= 0.5)
