@@ -2,14 +2,14 @@
 # for each (i,j), u != j, find a bootstrapped standard errors 
 # for estimated nu_ii, nu_ij and nu_ii - nu_ij
 
-bootSEs <- function(data,yName,qeFtn,grpName,nResamps,fPos=FALSE) 
+bootSEs <- function(data,yName,qeFtn,grpName,yYes,nResamps,fPos=FALSE) 
 {
    nRows <- nrow(data)
    nGrps <- length(levels(data[[grpName]]))
 
    z <- replicate(nResamps,
          {rows <- sample(1:nRows,nRows,replace=TRUE);
-          regAvg(data[rows,],yName,qeFtn,grpName,fPos=fPos)})
+          regAvg(data[rows,],yName,qeFtn,grpName,yYes,fPos=fPos)})
 
    nDF <- nGrps * (nGrps-1)
 
