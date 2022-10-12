@@ -13,13 +13,11 @@ bootSEs <- function(data,yName,qeFtn,grpName,yYes,nResamps,fPos=FALSE)
 
    nDF <- nGrps * (nGrps-1)
 
-   res <- data.frame(i=rep(nDF,'0'),j=rep(nDF,'0'),
-      myGrpEst=rep(nDF,0),
-      myGrpSE=rep(nDF,0),
-      theirGrpEst=rep(nDF,0),
-      theirGrpSE=rep(nDF,0),
-      bias=rep(nDF,0),
-      biasSE=rep(nDF,0))
+   res <- data.frame( row.names=NULL,
+      act = rep(nDF, "0"), cf = rep(nDF, "0"),
+      myGrpEst = rep(nDF, 0), myGrpSE = rep(nDF, 0),
+      theirGrpEst = rep(nDF, 0), theirGrpSE = rep(nDF, 0),
+      bias = rep(nDF, 0), biasSE = rep(nDF, 0))
 
    grpLvls <- levels(data[[grpName]])
    dfRow <- 1  
